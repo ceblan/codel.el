@@ -144,18 +144,22 @@
     (format "Buffer replaced: %s" buffer-name)))
 
 (defvar codel-tools
-  `((:name "Bash"
-           :function ,#'codel-bash
-           :description "Executes bash commands"
-           :args ((:name "command"
-                         :type string
-                         :description "Command to execute"
-                         :required t)
-                  (:name "timeout"
-                         :type number
-                         :description "Optional timeout in milliseconds (max 600000)")))
+	`((:name "Bash"
+					 :category "codel"
+					 :include t
+					 :function ,#'codel-bash
+					 :description "Executes bash commands"
+					 :args ((:name "command"
+												 :type string
+												 :description "Command to execute"
+												 :required t)
+									(:name "timeout"
+												 :type number
+												 :description "Optional timeout in milliseconds (max 600000)")))
 
     (:name "GlobTool"
+           :category "codel"
+					 :include t
            :function ,#'codel-glob-tool
            :description "File pattern matching"
            :args ((:name "pattern"
@@ -167,6 +171,8 @@
                          :description "Directory to search in")))
 
     (:name "GrepTool"
+           :category "codel"
+					 :include t
            :function ,#'codel-grep-tool
            :description "Content search using regex"
            :args ((:name "pattern"
@@ -181,6 +187,8 @@
                          :description "Directory to search in")))
 
     (:name "LS"
+           :category "codel"
+					 :include t
            :function ,#'codel-ls
            :description "Lists files and directories"
            :args ((:name "path"
@@ -192,6 +200,8 @@
                          :description "Array of glob patterns to ignore")))
 
     (:name "View"
+           :category "codel"
+					 :include t
            :function ,#'codel-view
            :description "Reads files"
            :args ((:name "file_path"
@@ -206,6 +216,8 @@
                          :description "Line number to start reading from")))
 
     (:name "Edit"
+           :category "codel"
+					 :include t
            :function ,#'codel-edit
            :description "Edits files"
            :args ((:name "file_path"
@@ -222,6 +234,8 @@
                          :required t)))
 
     (:name "Replace"
+           :category "codel"
+					 :include t
            :function ,#'codel-replace
            :description "Completely overwrites files"
            :args ((:name "file_path"
@@ -234,6 +248,8 @@
                          :required t)))
 
     (:name "ViewBuffer"
+           :category "codel"
+					 :include t
            :function ,#'codel-view-buffer
            :description "Reads Emacs buffers"
            :args ((:name "buffer_name"
@@ -248,6 +264,8 @@
                          :description "Line number to start reading from")))
 
     (:name "EditBuffer"
+           :category "codel"
+					 :include t
            :function ,#'codel-edit-buffer
            :description "Edits Emacs buffers"
            :args ((:name "buffer_name"
@@ -264,6 +282,8 @@
                          :required t)))
 
     (:name "ReplaceBuffer"
+           :category "codel"
+					 :include t
            :function ,#'codel-replace-buffer
            :description "Completely overwrites buffer contents"
            :args ((:name "buffer_name"
@@ -278,37 +298,21 @@
 ;;;###autoload
 (defun codel-setup-gptel ()
   "Register `codel' tools for use with `gptel'.
-Replaces any existing tools with the same name."
+Adds tools with 'codel-' prefix to avoid conflicts."
   (interactive)
   (require 'gptel)
   (declare-function gptel-make-tool "gptel")
-  (declare-function gptel-tool-name "gptel")
   (defvar gptel-tools)
   (mapcar
    (lambda (spec)
-     (let ((tool (apply #'gptel-make-tool spec)))
+     (let* ((name (plist-get spec :name))
+            (prefixed-name (concat "codel-" name))
+            (prefixed-spec (plist-put (copy-sequence spec) :name prefixed-name)))
        (setq gptel-tools
-             (cons tool (seq-remove
-                         (lambda (existing)
-                           (string= (gptel-tool-name existing)
-                                    (gptel-tool-name tool)))
-                         gptel-tools)))))
+             (cons (apply #'gptel-make-tool prefixed-spec) gptel-tools))))
    codel-tools))
 
-;;;###autoload
-(defun codel-setup-ai-org-chat ()
-  "Register `codel' tools for use with `ai-org-chat'.
-Replaces any existing tools with the same name."
-  (interactive)
-  (require 'ai-org-chat)
-  (require 'llm)
-  (declare-function ai-org-chat-register-tool "ai-org-chat")
-  (declare-function llm-make-tool "llm")
-  (mapcar
-   #'ai-org-chat-register-tool
-   (mapcar (lambda (spec)
-             (apply #'llm-make-tool spec))
-           codel-tools)))
+
 
 (provide 'codel)
 ;;; codel.el ends here
